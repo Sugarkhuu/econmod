@@ -91,11 +91,12 @@ loadData <- function(train_path, test_path, fixed_path){
 
 give_me = function(df, type) {
   if(type == 'mean' | type == 1){
-    result <- df %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ, hour_g) %>% 
+    result <- df %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ, wk_g, hour_g) %>% 
       summarise(stop_mean = mean(GETON_CNT_ADD, na.rm = T)) %>% ungroup() %>% 
       group_by(BUSROUTE_ID) %>% mutate(w_raw = stop_mean/sum(stop_mean)) %>% 
-      mutate(w = ifelse(w_raw>0.2,0.1,w_raw)) %>%     
+      mutate(w = ifelse(w_raw>0.0005,0.0005,w_raw)) %>%     
       ungroup()
+    result = result %>% mutate(w = ifelse(BUSSTOP_SEQ>18 & BUSSTOP_SEQ<22, w+0.0005-abs((20-BUSSTOP_SEQ))/10000,w))
     # near max stop_seq, there might be mistaken weights
     # result_seq <- df %>% group_by(BUSROUTE_ID) %>%
     #   summarise(max_seq = round(max(BUSSTOP_SEQ, na.rm = T)/2, digits = 0)) %>% ungroup() %>% select(BUSROUTE_ID,max_seq)
@@ -180,8 +181,8 @@ test       <- gen_features(test)
 
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(GETON_CNT_ADD = GETON_CNT-lag(GETON_CNT)) %>% ungroup() %>% 
-  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 0, GETON_CNT_ADD))%>% 
-  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,0), GETON_CNT_ADD)) %>%
+  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 2, GETON_CNT_ADD))%>% 
+  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,5), GETON_CNT_ADD)) %>%
   ungroup()
 
 # if negative making worse. if nan also making worse
@@ -191,15 +192,15 @@ train = train %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 
 test = test %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
 
 
-# train = train %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
-# test = test %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
+train = train %>% mutate(wk_g = ifelse(weekday=='Saturday' | weekday=='Sunday',1, 2))
+test = test  %>% mutate(wk_g = ifelse(weekday=='Saturday' | weekday=='Sunday',1, 2))
 
 seq_mean = give_me(train ,type = 'mean')
 # seq_mean_adj = give_me(train ,type = 'mean')
 # seq_mean$stop_mean[seq_mean$stop_mean<0.1] = seq_mean_adj$stop_mean[seq_mean$stop_mean<0.1]
 
 test = test %>% left_join(seq_mean, 
-                          by = c('BUSROUTE_ID','BUSSTOP_SEQ', 'hour_g'))
+                          by = c('BUSROUTE_ID','BUSSTOP_SEQ', 'wk_g', 'hour_g'))
 
 # test$GETON_CNT[1] = test_t$GETON_CNT[1]
 # test$GETON_CNT[nrow(test)] = test_t$GETON_CNT[nrow(test_t)]
@@ -229,13 +230,13 @@ test$group_old = rleid(test$empty)  ### don't delete - is used!!!
 # time delay versus geton_add regression
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 0, travel_time))%>% 
-  mutate(travel_time = ifelse(is.na(travel_time), 0, travel_time)) %>%
+  mutate(travel_time = ifelse(travel_time <0, 180, travel_time))%>% 
+  mutate(travel_time = ifelse(is.na(travel_time), 180, travel_time)) %>%
   ungroup()
 test <- test %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 0, travel_time))%>% 
-  mutate(travel_time = ifelse(is.na(travel_time), 0, travel_time)) %>%
+  mutate(travel_time = ifelse(travel_time <0, 180, travel_time))%>% 
+  mutate(travel_time = ifelse(is.na(travel_time), 180, travel_time)) %>%
   ungroup()
 
 ## improves a bit by 150 rather than 0. very little, -1e2
@@ -245,7 +246,7 @@ seq_time_mean = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>%
 test %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% 
   summarise(mean_time = mean(travel_time))
 train = train %>% left_join(seq_mean, 
-                            by = c('BUSROUTE_ID','BUSSTOP_SEQ','hour_g'))
+                            by = c('BUSROUTE_ID','BUSSTOP_SEQ', 'wk_g','hour_g'))
 train = train %>% left_join(seq_time_mean, 
                             by = c('BUSROUTE_ID','BUSSTOP_SEQ'))
 test = test %>% left_join(seq_time_mean, 
@@ -267,7 +268,7 @@ test$demeaned_travel_time[test$demeaned_travel_time>2] <- 2
 test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 0.5
 #changing from 1.5 to 1 improves by 0.03. 10.03 -> 9.76 when turning off >1.5 part
 test$w[is.na(test$w)] <- 0
-beta = 0
+beta = 0.9
 test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
 test$w = test$w2
 
