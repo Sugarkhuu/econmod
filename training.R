@@ -11,7 +11,7 @@ library(xts, warn.conflicts = F)
 
 fix_mixed_sessions = function(df,seq_mean){
   print(sprintf('Starting fix_mixed_sessions ..................................'))
-  df = df %>% ungroup() %>% arrange(group_old, RECORD_DATE) %>% group_by(group_old) %>% mutate(hat_diff = GETON_CNT_hat-lag(GETON_CNT_hat))
+  df = df %>% ungroup() %>% arrange(group_old, RECORD_DATE) %>% group_by(group_old) %>% mutate(hat_diff = GETON_CNT_hat-lag(GETON_CNT_hat)) %>% ungroup()
   bad_estimates = df %>% ungroup() %>% filter(hat_diff<0, empty==T) %>% select(index, hat_diff, group_old)
   print(sprintf('Number of bad_groups: %i',nrow(bad_estimates)))
   if(nrow(bad_estimates)>0){
@@ -127,7 +127,7 @@ weight_interp <- function(df,seq_mean){
                          ifelse(!is.na(GETON_CNT),GETON_CNT,
                                 incr_cum))
   df   = fix_mixed_sessions(df, seq_mean)
-  # df   = fix_skipped_sessions(df, seq_mean)
+  # df   = fix_skipped_sessions(df, seq_mean) # using it together with regression might push too much. Already accounted for by reg?
   print(sprintf('Finished estimation ..................................'))
   return(df)
 }
@@ -142,25 +142,25 @@ train      <- res[[1]]
 test       <- res[[2]]
 fixed      <- res[[3]]
 
-smp_size <- floor(0.5 * nrow(train))
-
-## set the seed to make your partition reproducible
-set.seed(542)
-train_ind <- sample(seq_len(nrow(train)), size = smp_size)
-
-# train_t <- train[train_ind, ]
-test_t <- train[-train_ind, ]
-test = test_t
-smp_size_t <- floor(0.75 * nrow(test))
-test_ind <- sample(seq_len(nrow(test)), size = smp_size_t)
-test$real = test$GETON_CNT
-
-# test= test %>% filter(BUSSTOP_SEQ>lag(BUSSTOP_SEQ) & GETON_CNT>lag(GETON_CNT))
-
-test$GETON_CNT[test_ind] = NA
-test$GETON_CNT[1] = test_t$GETON_CNT[1]
-test$GETON_CNT[nrow(test_t)] = test_t$GETON_CNT[nrow(test_t)]
-#test$GETON_CNT[test$index ==2899085] = test_t$GETON_CNT[test$index ==2899085]
+# smp_size <- floor(0.5 * nrow(train))
+# 
+# ## set the seed to make your partition reproducible
+# set.seed(542)
+# train_ind <- sample(seq_len(nrow(train)), size = smp_size)
+# 
+# # train_t <- train[train_ind, ]
+# test_t <- train[-train_ind, ]
+# test = test_t
+# smp_size_t <- floor(0.75 * nrow(test))
+# test_ind <- sample(seq_len(nrow(test)), size = smp_size_t)
+# test$real = test$GETON_CNT
+# 
+# # test= test %>% filter(BUSSTOP_SEQ>lag(BUSSTOP_SEQ) & GETON_CNT>lag(GETON_CNT))
+# 
+# test$GETON_CNT[test_ind] = NA
+# test$GETON_CNT[1] = test_t$GETON_CNT[1]
+# test$GETON_CNT[nrow(test_t)] = test_t$GETON_CNT[nrow(test_t)]
+# #test$GETON_CNT[test$index ==2899085] = test_t$GETON_CNT[test$index ==2899085]
 
 train      <- gen_features(train)
 test       <- gen_features(test)
@@ -181,8 +181,8 @@ seq_mean = give_me(train ,type = 'mean')
 test = test %>% left_join(seq_mean, 
                           by = c('BUSROUTE_ID','BUSSTOP_SEQ'))
 
-test$GETON_CNT[1] = test_t$GETON_CNT[1]
-test$GETON_CNT[nrow(test)] = test_t$GETON_CNT[nrow(test_t)]
+# test$GETON_CNT[1] = test_t$GETON_CNT[1]
+# test$GETON_CNT[nrow(test)] = test_t$GETON_CNT[nrow(test_t)]
 
 test$interp = na.approx(test$GETON_CNT)
 test$min = na.locf(test$GETON_CNT)
@@ -191,7 +191,7 @@ test$GETON_CNT = ifelse(is.na(test$GETON_CNT) & test$max == test$min,
                         test$max, 
                         test$GETON_CNT)
 
-test = test %>% filter(max>=min)
+# test = test %>% filter(max>=min)
 
 test$empty     = is.na(test$GETON_CNT)
 test$empty_lag = lag(test$empty)
@@ -246,74 +246,40 @@ test$w[is.na(test$w)] <- 0
 test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
 test$w = test$w2
 
-res_df = weight_interp(test,seq_mean)
-res_df = weight_interp(res_df,seq_mean)
+
 
 ### real submission part
 
-# res_df = weight_interp(res_df,seq_mean)
-# 
-# # res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat>max, max, GETON_CNT_hat))
-# # res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat<min, min, GETON_CNT_hat))
-# 
-# 
+res_df = weight_interp(test,seq_mean)
+res_df = weight_interp(res_df,seq_mean)
+
 # res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat>max, max, GETON_CNT_hat))
 # res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat<min, min, GETON_CNT_hat))
-# submission <- res_df %>% ungroup %>% select(index, GETON_CNT_hat)
-# submission$GETON_CNT_hat = na.approx(submission$GETON_CNT_hat,method='linear')
-# names(submission)[names(submission) == "GETON_CNT_hat"] <- "GETON_CNT"
-# submission = submission %>% arrange(index)
-# fwrite(submission,'submission.csv')
-# 
-# 
-# 
-# res_138 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/139.csv')
-# # # # colnames(res_df)
-# # # 
-# res_df_new = res_df
-# res_df_new = res_df %>% arrange(index)
-# # res_df_new$geton_mean = mean$GETON_CNT
-# # res_df_new$geton_median = median$GETON_CNT
-# res_df_new$geton_138 = res_138$GETON_CNT
-# # # 
-# plot_result = function(df, first, length){
-#   # see = df %>% select(RECORD_DATE, GETON_CNT,GETON_CNT_hat)
-#   # see = df %>% select(RECORD_DATE, GETON_CNT,mean_geton)
-#   see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_138, min, max)
-#   i = first
-#   see_n = see[i:(i+length),]
-#   see_n = see_n %>% select(-RECORD_DATE)
-#   see_n =xts(see_n, order.by = seq(as.Date('2000-01-01'),
-#                                    as.Date('2000-01-01')+nrow(see_n)-1,
-#                                    by = 1))
-#   dygraph(see_n)
-# }
-# # # 
-# # # res_df_plot = res_df_new %>% filter(BUSROUTE_ID == 11100010)
-# # # train_plot = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% mutate(mean_geton =median(GETON_CNT)) %>% ungroup()%>%filter(BUSROUTE_ID == 11100010)
-# plot_result(res_df_new,1,200)
-# # # 
-# # # 
-# # # 
-# res_df_new$diff = res_df_new$GETON_CNT_hat - res_df_new$geton_138
-# neg = res_df_new %>% filter(diff < 0)
-# pos = res_df_new %>% filter(diff > 0)
-# mean(neg$diff)
-# mean(pos$diff)
-# min(neg$diff)
-# max(pos$diff)
-# # 
-# mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138),na.rm=T)
-# # 
-# # # orig_mod = res_df
-# # # mean(abs(res_df$GETON_CNT_hat - res_df$real))
 
-## training part
 
+res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat>max, max, GETON_CNT_hat))
+res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat<min, min, GETON_CNT_hat))
+submission <- res_df %>% ungroup %>% select(index, GETON_CNT_hat)
+submission$GETON_CNT_hat = na.approx(submission$GETON_CNT_hat,method='linear')
+names(submission)[names(submission) == "GETON_CNT_hat"] <- "GETON_CNT"
+submission = submission %>% arrange(index)
+fwrite(submission,'submission.csv')
+
+
+
+res_138 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/139.csv')
+# # # colnames(res_df)
+# #
+res_df_new = res_df
+res_df_new = res_df %>% arrange(index)
+# res_df_new$geton_mean = mean$GETON_https://github.com/Sugarkhuu/econmod/blob/master/training.RCNT
+# res_df_new$geton_median = median$GETON_CNT
+res_df_new$geton_138 = res_138$GETON_CNT
+# #
 plot_result = function(df, first, length){
   # see = df %>% select(RECORD_DATE, GETON_CNT,GETON_CNT_hat)
-  see = df %>% select(RECORD_DATE, GETON_CNT,real, GETON_CNT_hat, min, max)
-  # see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_mean, geton_median, geton_140, min, max)
+  # see = df %>% select(RECORD_DATE, GETON_CNT,mean_geton)
+  see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_138, min, max)
   i = first
   see_n = see[i:(i+length),]
   see_n = see_n %>% select(-RECORD_DATE)
@@ -322,15 +288,51 @@ plot_result = function(df, first, length){
                                    by = 1))
   dygraph(see_n)
 }
+# #
+# # res_df_plot = res_df_new %>% filter(BUSROUTE_ID == 11100010)
+# # train_plot = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% mutate(mean_geton =median(GETON_CNT)) %>% ungroup()%>%filter(BUSROUTE_ID == 11100010)
+plot_result(res_df_new,1,200)
+# #
+# #
+# #
+res_df_new$diff = res_df_new$GETON_CNT_hat - res_df_new$geton_138
+neg = res_df_new %>% filter(diff < 0)
+pos = res_df_new %>% filter(diff > 0)
+mean(neg$diff)
+mean(pos$diff)
+min(neg$diff)
+max(pos$diff)
+#
+mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138))
+# # 
+# # # orig_mod = res_df
+# # # mean(abs(res_df$GETON_CNT_hat - res_df$real))
 
-# res_df_plot = res_df_new %>% filter(BUSROUTE_ID == 11100010)
-# train_plot = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% mutate(mean_geton =median(GETON_CNT)) %>% ungroup()%>%filter(BUSROUTE_ID == 11100010)
-ressss = res_df
-res_df_plot = res_df %>% filter(BUSROUTE_ID == 11100510)
-plot_result(res_df,10000,1000)
+## training part
 
-res_df = res_df %>% filter(GETON_CNT_hat>=min)
-res_df = res_df %>% filter(GETON_CNT_hat<=max)
-mean(abs(res_df$GETON_CNT_hat - res_df$real),na.rm=T)
+# res_df = weight_interp(test,seq_mean)
+
+# plot_result = function(df, first, length){
+#   # see = df %>% select(RECORD_DATE, GETON_CNT,GETON_CNT_hat)
+#   see = df %>% select(RECORD_DATE, GETON_CNT,real, GETON_CNT_hat, min, max)
+#   # see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_mean, geton_median, geton_140, min, max)
+#   i = first
+#   see_n = see[i:(i+length),]
+#   see_n = see_n %>% select(-RECORD_DATE)
+#   see_n =xts(see_n, order.by = seq(as.Date('2000-01-01'),
+#                                    as.Date('2000-01-01')+nrow(see_n)-1,
+#                                    by = 1))
+#   dygraph(see_n)
+# }
+# 
+# # res_df_plot = res_df_new %>% filter(BUSROUTE_ID == 11100010)
+# # train_plot = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% mutate(mean_geton =median(GETON_CNT)) %>% ungroup()%>%filter(BUSROUTE_ID == 11100010)
+# ressss = res_df
+# res_df_plot = res_df %>% filter(BUSROUTE_ID == 11100510)
+# plot_result(res_df,10000,1000)
+# 
+# res_df = res_df %>% filter(GETON_CNT_hat>=min)
+# res_df = res_df %>% filter(GETON_CNT_hat<=max)
+# mean(abs(res_df$GETON_CNT_hat - res_df$real),na.rm=T)
 
 
