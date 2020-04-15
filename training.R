@@ -86,7 +86,7 @@ give_me = function(df, type) {
     result <- df %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% 
       summarise(stop_mean = mean(GETON_CNT_ADD, na.rm = T)) %>% ungroup() %>% 
       group_by(BUSROUTE_ID) %>% mutate(w_raw = stop_mean/sum(stop_mean)) %>% 
-      mutate(w = ifelse(w_raw>0.2,0.1,w_raw)) %>%     
+      mutate(w = ifelse(w_raw>0.2,0.2,w_raw)) %>%     
       ungroup()
     # near max stop_seq, there might be mistaken weights
     # result_seq <- df %>% group_by(BUSROUTE_ID) %>%
@@ -167,8 +167,8 @@ test       <- gen_features(test)
 
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(GETON_CNT_ADD = GETON_CNT-lag(GETON_CNT)) %>% ungroup() %>% 
-  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 0, GETON_CNT_ADD))%>% 
-  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,0), GETON_CNT_ADD)) %>%
+  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 2, GETON_CNT_ADD))%>% 
+  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,5), GETON_CNT_ADD)) %>%
   ungroup()
 
 # if negative making worse. if nan also making worse
