@@ -126,8 +126,8 @@ weight_interp <- function(df,seq_mean){
   df   = df %>% mutate(GETON_CNT_hat = 
                          ifelse(!is.na(GETON_CNT),GETON_CNT,
                                 incr_cum))
-  # df   = fix_mixed_sessions(df, seq_mean)
-  # df   = fix_skipped_sessions(df, seq_mean) # using it together with regression might push too much. Already accounted for by reg?
+  df   = fix_mixed_sessions(df, seq_mean)
+  df   = fix_skipped_sessions(df, seq_mean) # using it together with regression might push too much. Already accounted for by reg?
   print(sprintf('Finished estimation ..................................'))
   return(df)
 }
