@@ -325,6 +325,8 @@ ressss = res_df
 res_df_plot = res_df %>% filter(BUSROUTE_ID == 11100510)
 plot_result(res_df,10000,1000)
 
+res_df = res_df %>% filter(GETON_CNT_hat>=min)
+res_df = res_df %>% filter(GETON_CNT_hat<=max)
 mean(abs(res_df$GETON_CNT_hat - res_df$real),na.rm=T)
 
 
