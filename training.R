@@ -204,7 +204,7 @@ test$group_old = rleid(test$empty)  ### don't delete - is used!!!
 # time delay versus geton_add regression
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 150, travel_time))%>% 
+  mutate(travel_time = ifelse(travel_time <0, 151, travel_time))%>% 
   mutate(travel_time = ifelse(is.na(travel_time), 150, travel_time)) %>%
   ungroup()
 test <- test %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
