@@ -126,7 +126,7 @@ weight_interp <- function(df,seq_mean){
   df   = df %>% mutate(GETON_CNT_hat = 
                          ifelse(!is.na(GETON_CNT),GETON_CNT,
                                 incr_cum))
-  # df   = fix_mixed_sessions(df, seq_mean)
+  df   = fix_mixed_sessions(df, seq_mean)
   # df   = fix_skipped_sessions(df, seq_mean)
   print(sprintf('Finished estimation ..................................'))
   return(df)
@@ -242,11 +242,12 @@ test$demeaned_travel_time[is.na(test$demeaned_travel_time)] <- 1
 # test$demeaned_travel_time[test$demeaned_travel_time>2] <- 2
 test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 1
 #changing from 1.5 to 1 improves by 0.03. 10.03 -> 9.76 when turning off >1.5 part
-# test$w[is.na(test$w)] <- 0
-# test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
-# test$w = test$w2
+test$w[is.na(test$w)] <- 0
+test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
+test$w = test$w2
 
 res_df = weight_interp(test,seq_mean)
+res_df = weight_interp(res_df,seq_mean)
 
 ### real submission part
 
