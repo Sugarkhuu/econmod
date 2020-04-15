@@ -191,8 +191,8 @@ train = train %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 
 test = test %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
 
 
-train = train %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
-test = test %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
+# train = train %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
+# test = test %>% mutate(hour_g = ifelse(hour<=10,1, ifelse(hour>10 & hour<=15, 2, ifelse(hour>15 & hour<=20, 3,4))))
 
 seq_mean = give_me(train ,type = 'mean')
 # seq_mean_adj = give_me(train ,type = 'mean')
@@ -247,7 +247,7 @@ test %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>%
 train = train %>% left_join(seq_mean, 
                             by = c('BUSROUTE_ID','BUSSTOP_SEQ','hour_g'))
 train = train %>% left_join(seq_time_mean, 
-                            by = c('BUSROUTE_ID','BUSSTOP_SEQ','hour_g'))
+                            by = c('BUSROUTE_ID','BUSSTOP_SEQ'))
 test = test %>% left_join(seq_time_mean, 
                           by = c('BUSROUTE_ID','BUSSTOP_SEQ'))
 # train$demeaned_geton = train$GETON_CNT_ADD/train$stop_mean
@@ -322,7 +322,7 @@ res_df_new$just_mix = just_mix$GETON_CNT
 plot_result = function(df, first, length){
   # see = df %>% select(RECORD_DATE, GETON_CNT,GETON_CNT_hat)
   # see = df %>% select(RECORD_DATE, GETON_CNT,mean_geton)
-  see = df %>% select(RECORD_DATE, diff)
+  see = df %>% select(RECORD_DATE, GETON_CNT_hat,geton_138)
   i = first
   see_n = see[i:(i+length),]
   see_n = see_n %>% select(-RECORD_DATE)
@@ -334,11 +334,11 @@ plot_result = function(df, first, length){
 # #
 # # res_df_plot = res_df_new %>% filter(BUSROUTE_ID == 11100010)
 # # train_plot = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% mutate(mean_geton =median(GETON_CNT)) %>% ungroup()%>%filter(BUSROUTE_ID == 11100010)
-plot_result(res_df_new,1,1000000)
+plot_result(res_df_new,1,1000)
 # #
 # #
 # #
-res_df_new$diff = res_df_new$geton_139 - res_df_new$geton_138
+res_df_new$diff = res_df_new$GETON_CNT_hat - res_df_new$geton_138
 neg = res_df_new %>% filter(diff < 0)
 pos = res_df_new %>% filter(diff > 0)
 mean(neg$diff)
@@ -381,5 +381,4 @@ mean(abs(res_df_new$geton_139 - res_df_new$geton_138))
 # res_df = res_df %>% filter(GETON_CNT_hat>=min)
 # res_df = res_df %>% filter(GETON_CNT_hat<=max)
 # mean(abs(res_df$GETON_CNT_hat - res_df$real),na.rm=T)
-
 
