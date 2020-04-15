@@ -86,7 +86,7 @@ give_me = function(df, type) {
     result <- df %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% 
       summarise(stop_mean = mean(GETON_CNT_ADD, na.rm = T)) %>% ungroup() %>% 
       group_by(BUSROUTE_ID) %>% mutate(w_raw = stop_mean/sum(stop_mean)) %>% 
-      mutate(w = ifelse(w_raw>0.2,0.2,w_raw)) %>%     
+      mutate(w = ifelse(w_raw>0.2,0.1,w_raw)) %>%     
       ungroup()
     # near max stop_seq, there might be mistaken weights
     # result_seq <- df %>% group_by(BUSROUTE_ID) %>%
