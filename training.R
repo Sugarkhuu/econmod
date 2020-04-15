@@ -127,7 +127,7 @@ weight_interp <- function(df,seq_mean){
                          ifelse(!is.na(GETON_CNT),GETON_CNT,
                                 incr_cum))
   df   = fix_mixed_sessions(df, seq_mean)
-  df   = fix_skipped_sessions(df, seq_mean) # using it together with regression might push too much. Already accounted for by reg?
+  # df   = fix_skipped_sessions(df, seq_mean) # using it together with regression might push too much. Already accounted for by reg?
   print(sprintf('Finished estimation ..................................'))
   return(df)
 }
@@ -141,6 +141,11 @@ res        <- loadData(train_path, test_path, fixed_path)
 train      <- res[[1]]
 test       <- res[[2]]
 fixed      <- res[[3]]
+
+int =  intersect(unique(test$BUSROUTE_ID), 
+                 unique(train$BUSROUTE_ID))
+test_all = test
+test = test %>% filter(BUSROUTE_ID %in% int)
 
 # smp_size <- floor(0.5 * nrow(train))
 # 
@@ -253,35 +258,50 @@ test$w = test$w2
 res_df = weight_interp(test,seq_mean)
 res_df = weight_interp(res_df,seq_mean)
 
-# res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat>max, max, GETON_CNT_hat))
-# res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat<min, min, GETON_CNT_hat))
 
 
 res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat>max, max, GETON_CNT_hat))
 res_df = res_df %>% mutate(GETON_CNT_hat = ifelse(GETON_CNT_hat<min, min, GETON_CNT_hat))
 submission <- res_df %>% ungroup %>% select(index, GETON_CNT_hat)
+
 submission$GETON_CNT_hat = na.approx(submission$GETON_CNT_hat,method='linear')
 names(submission)[names(submission) == "GETON_CNT_hat"] <- "GETON_CNT"
+
+routes_only = test_all %>%  filter(!BUSROUTE_ID %in% int) %>% 
+  select(index, GETON_CNT)
+routes_only$GETON_CNT = na.approx(routes_only$GETON_CNT)
+
+submission = bind_rows(submission,routes_only)
+
 submission = submission %>% arrange(index)
 fwrite(submission,'submission.csv')
 
 
+routes_only = test_all %>%  filter(!BUSROUTE_ID %in% int) %>% 
+  select(index, GETON_CNT)
+
 
 res_139 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/139.csv')
 res_138 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/138.csv')
+skip_mix = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/skip_mix.csv')
+just_mix = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/just_mix.csv')
 # # # colnames(res_df)
 # #
-res_df_new = res_df
-res_df_new = res_df %>% arrange(index)
+res_df_new = submission
+res_df_new = res_df_new %>% arrange(index)
+# res_df_new$GETON_CNT = submission$GETON_CNT
 # res_df_new$geton_mean = mean$GETON_https://github.com/Sugarkhuu/econmod/blob/master/training.RCNT
 # res_df_new$geton_median = median$GETON_CNT
 res_df_new$geton_138 = res_138$GETON_CNT
 res_df_new$geton_139 = res_139$GETON_CNT
+res_df_new$skip_mix = skip_mix$GETON_CNT
+res_df_new$just_mix = just_mix$GETON_CNT
+
 # #
 plot_result = function(df, first, length){
   # see = df %>% select(RECORD_DATE, GETON_CNT,GETON_CNT_hat)
   # see = df %>% select(RECORD_DATE, GETON_CNT,mean_geton)
-  see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_138, geton_139, min, max)
+  see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_138, min, max)
   i = first
   see_n = see[i:(i+length),]
   see_n = see_n %>% select(-RECORD_DATE)
@@ -293,11 +313,11 @@ plot_result = function(df, first, length){
 # #
 # # res_df_plot = res_df_new %>% filter(BUSROUTE_ID == 11100010)
 # # train_plot = train %>% group_by(BUSROUTE_ID, BUSSTOP_SEQ) %>% mutate(mean_geton =median(GETON_CNT)) %>% ungroup()%>%filter(BUSROUTE_ID == 11100010)
-plot_result(res_df_new,1,200)
+plot_result(res_df_new,1,2000)
 # #
 # #
 # #
-res_df_new$diff = res_df_new$GETON_CNT_hat - res_df_new$geton_138
+res_df_new$diff = res_df_new$GETON_CNT - res_df_new$geton_138
 neg = res_df_new %>% filter(diff < 0)
 pos = res_df_new %>% filter(diff > 0)
 mean(neg$diff)
@@ -305,8 +325,10 @@ mean(pos$diff)
 min(neg$diff)
 max(pos$diff)
 #
-mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_139))
-mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138))
+mean(abs(res_df_new$GETON_CNT - res_df_new$geton_139))
+mean(abs(res_df_new$GETON_CNT - res_df_new$geton_138))
+mean(abs(res_df_new$GETON_CNT - res_df_new$skip_mix))
+mean(abs(res_df_new$GETON_CNT - res_df_new$just_mix))
 mean(abs(res_df_new$geton_139 - res_df_new$geton_138))
 # # 
 # # # orig_mod = res_df
