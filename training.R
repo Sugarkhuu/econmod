@@ -242,9 +242,9 @@ test$demeaned_travel_time[is.na(test$demeaned_travel_time)] <- 1
 # test$demeaned_travel_time[test$demeaned_travel_time>2] <- 2
 test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 1
 #changing from 1.5 to 1 improves by 0.03. 10.03 -> 9.76 when turning off >1.5 part
-# test$w[is.na(test$w)] <- 0
-# test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
-# test$w = test$w2
+test$w[is.na(test$w)] <- 0
+test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
+test$w = test$w2
 
 
 
@@ -267,7 +267,8 @@ fwrite(submission,'submission.csv')
 
 
 
-res_138 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/139.csv')
+res_139 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/139.csv')
+res_138 = fread('/home/sugarkhuu/Documents/Documents/my/machineLearning/phase2/data/138.csv')
 # # # colnames(res_df)
 # #
 res_df_new = res_df
@@ -275,11 +276,12 @@ res_df_new = res_df %>% arrange(index)
 # res_df_new$geton_mean = mean$GETON_https://github.com/Sugarkhuu/econmod/blob/master/training.RCNT
 # res_df_new$geton_median = median$GETON_CNT
 res_df_new$geton_138 = res_138$GETON_CNT
+res_df_new$geton_139 = res_139$GETON_CNT
 # #
 plot_result = function(df, first, length){
   # see = df %>% select(RECORD_DATE, GETON_CNT,GETON_CNT_hat)
   # see = df %>% select(RECORD_DATE, GETON_CNT,mean_geton)
-  see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_138, min, max)
+  see = df %>% select(RECORD_DATE, GETON_CNT,interp, GETON_CNT_hat, geton_138, geton_139, min, max)
   i = first
   see_n = see[i:(i+length),]
   see_n = see_n %>% select(-RECORD_DATE)
@@ -303,7 +305,9 @@ mean(pos$diff)
 min(neg$diff)
 max(pos$diff)
 #
-mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138), na.rm=T)
+mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_139))
+mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138))
+mean(abs(res_df_new$geton_139 - res_df_new$geton_138))
 # # 
 # # # orig_mod = res_df
 # # # mean(abs(res_df$GETON_CNT_hat - res_df$real))
