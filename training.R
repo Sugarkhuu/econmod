@@ -167,8 +167,8 @@ test       <- gen_features(test)
 
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(GETON_CNT_ADD = GETON_CNT-lag(GETON_CNT)) %>% ungroup() %>% 
-  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 0, GETON_CNT_ADD))%>% 
-  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,0), GETON_CNT_ADD)) %>%
+  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 2, GETON_CNT_ADD))%>% 
+  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,5), GETON_CNT_ADD)) %>%
   ungroup()
 
 # if negative making worse. if nan also making worse
@@ -204,13 +204,13 @@ test$group_old = rleid(test$empty)  ### don't delete - is used!!!
 # time delay versus geton_add regression
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 151, travel_time))%>% 
-  mutate(travel_time = ifelse(is.na(travel_time), 150, travel_time)) %>%
+  mutate(travel_time = ifelse(travel_time <0, 180, travel_time))%>% 
+  mutate(travel_time = ifelse(is.na(travel_time), 180, travel_time)) %>%
   ungroup()
 test <- test %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 150, travel_time))%>% 
-  mutate(travel_time = ifelse(is.na(travel_time), 150, travel_time)) %>%
+  mutate(travel_time = ifelse(travel_time <0, 180, travel_time))%>% 
+  mutate(travel_time = ifelse(is.na(travel_time), 180, travel_time)) %>%
   ungroup()
 
 ## improves a bit by 150 rather than 0. very little, -1e2
