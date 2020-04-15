@@ -190,6 +190,9 @@ test$max = na.locf(test$GETON_CNT, fromLast = T)
 test$GETON_CNT = ifelse(is.na(test$GETON_CNT) & test$max == test$min,
                         test$max, 
                         test$GETON_CNT)
+
+test = test %>% filter(max>=min)
+
 test$empty     = is.na(test$GETON_CNT)
 test$empty_lag = lag(test$empty)
 test$empty_ind = ifelse(test$empty == F & test$empty_lag == F,-1,test$max)
