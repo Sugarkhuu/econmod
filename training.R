@@ -167,8 +167,8 @@ test       <- gen_features(test)
 
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(GETON_CNT_ADD = GETON_CNT-lag(GETON_CNT)) %>% ungroup() %>% 
-  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 2, GETON_CNT_ADD))%>% 
-  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,5), GETON_CNT_ADD)) %>%
+  mutate(GETON_CNT_ADD = ifelse(GETON_CNT_ADD <0, 0, GETON_CNT_ADD))%>% 
+  mutate(GETON_CNT_ADD = ifelse(is.na(GETON_CNT_ADD), ifelse(BUSSTOP_SEQ==1,GETON_CNT,0), GETON_CNT_ADD)) %>%
   ungroup()
 
 # if negative making worse. if nan also making worse
@@ -204,13 +204,13 @@ test$group_old = rleid(test$empty)  ### don't delete - is used!!!
 # time delay versus geton_add regression
 train <- train %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 180, travel_time))%>% 
-  mutate(travel_time = ifelse(is.na(travel_time), 180, travel_time)) %>%
+  mutate(travel_time = ifelse(travel_time <0, 150, travel_time))%>% 
+  mutate(travel_time = ifelse(is.na(travel_time), 150, travel_time)) %>%
   ungroup()
 test <- test %>% arrange(BUS_ID, RECORD_DATE) %>% group_by(BUS_ID,ymd) %>% 
   mutate(travel_time = as.numeric(RECORD_DATE-lag(RECORD_DATE),units="secs")) %>% ungroup() %>% 
-  mutate(travel_time = ifelse(travel_time <0, 180, travel_time))%>% 
-  mutate(travel_time = ifelse(is.na(travel_time), 180, travel_time)) %>%
+  mutate(travel_time = ifelse(travel_time <0, 150, travel_time))%>% 
+  mutate(travel_time = ifelse(is.na(travel_time), 150, travel_time)) %>%
   ungroup()
 
 ## improves a bit by 150 rather than 0. very little, -1e2
@@ -237,7 +237,7 @@ beta = model$coefficients[[2]]
 test$demeaned_travel_time = test$travel_time/test$mean_time
 test$demeaned_travel_time[is.na(test$demeaned_travel_time)] <- 1
 # test$demeaned_travel_time[test$demeaned_travel_time>2] <- 2
-test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 0.5
+test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 1
 #changing from 1.5 to 1 improves by 0.03. 10.03 -> 9.76 when turning off >1.5 part
 test$w[is.na(test$w)] <- 0
 test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
