@@ -1,7 +1,7 @@
 %% Preliminary
 
 % add IRIS to the path
-cd /home/sugarkhuu/Documents/Documents/my/modelling/econmod/sixth
+cd /home/sugarkhuu/Documents/Documents/my/modelling/econmod/seventh
 addpath /home/sugarkhuu/Documents/IRIS-Toolbox-Release-20180319
 
 % configure IRIS
@@ -9,12 +9,19 @@ irisstartup
 
 disp('Forecast starts ...');
 p   = struct();
-sixth_param;
+seventh_param;
 
 
-m = model('sixth.mod','linear',true,'assign',p);
+m = model('seventh.mod','linear',true,'assign',p);
 m = solve(m);
 ms = sstate(m);
+
+
+mult.std_shock_l_y_gap = tseries();
+mult.std_shock_l_y_gap(qq(2018,3):qq(2019,2)) = 5;
+rng = qq(2018,3):qq(2019,4);
+
+std = std_gen(m,mult, rng);
 
 
 d=struct();
@@ -49,6 +56,14 @@ d.obs_cpi_f(qq(2018,1):qq(2019,4))  = cpi_data(:,2);
 d.obs_cpi_xf(qq(2018,1):qq(2019,4)) = cpi_data(:,3);
 d.obs_dl_cpi_foreign(qq(2018,1):qq(2019,4)) = NaN;
 
+std_list = regexp(['std_shock_l_y_gap, std_shock_i'],'[\s,]+','split');
+
+% overall multiplier
+[mmult,p,stdNew,a,b,multvcov] = find_shock_mult(0.5,100,1e-3,100,p,m,d,...
+rng,std_list,std);
+
+
+% smoother
 [~, f, v, ~, pe, co] = filter(m, d, qq(2018,1):qq(2019,4)+40);
 a=f.mean;
 

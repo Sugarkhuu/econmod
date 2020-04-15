@@ -38,8 +38,24 @@ p.c5_dl_cpi_f    = 0.2;
 p.c5_dl_cpi_xf   = 0.1;
 
 
+% STD
+
+p.std_shock_i = 3;
+
 p.std_shock_l_y_gap  = 3;
 p.std_shock_dl_y_tnd = 2;
 
 p.std_shock_dl_cpi_f  = 100;
 p.std_shock_dl_cpi_xf =0.1;
+p.std_shock_dl_disc = 1.5;
+p.std_shock_dl_cpi_tar = 2.3;
+p.std_shock_dl_cpi_foreign_tar = 2;
+p.std_shock_dl_cpi_foreign = 2;
+p.std_shock_dl_r_p_tnd = 0.5;
+
+p.std_shock_prem = 1;
+p.std_shock_r_tnd = 1.1;
+
+p.std_shock_l_mnt_usd = 5;
+p.std_shock_dl_z_tnd = 3;
+p.std_shock_l_z_tnd = 1.2;

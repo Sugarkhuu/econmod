@@ -236,7 +236,7 @@ model = lm(demeaned_geton~demeaned_travel_time,data=short_train)
 beta = model$coefficients[[2]]
 test$demeaned_travel_time = test$travel_time/test$mean_time
 test$demeaned_travel_time[is.na(test$demeaned_travel_time)] <- 1
-test$demeaned_travel_time[test$demeaned_travel_time>2.5] <- 2.5
+# test$demeaned_travel_time[test$demeaned_travel_time>2.5] <- 2.5
 test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 0.5
 #changing from 1.5 to 1 improves by 0.03. 10.03 -> 9.76 when turning off >1.5 part
 test$w[is.na(test$w)] <- 0
