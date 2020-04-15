@@ -242,9 +242,9 @@ test$demeaned_travel_time[is.na(test$demeaned_travel_time)] <- 1
 # test$demeaned_travel_time[test$demeaned_travel_time>2] <- 2
 test$demeaned_travel_time[test$demeaned_travel_time<0.5] <- 1
 #changing from 1.5 to 1 improves by 0.03. 10.03 -> 9.76 when turning off >1.5 part
-test$w[is.na(test$w)] <- 0
-test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
-test$w = test$w2
+# test$w[is.na(test$w)] <- 0
+# test$w2 = test$w + test$w*(test$demeaned_travel_time-1)*beta
+# test$w = test$w2
 
 
 
@@ -303,7 +303,7 @@ mean(pos$diff)
 min(neg$diff)
 max(pos$diff)
 #
-mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138))
+mean(abs(res_df_new$GETON_CNT_hat - res_df_new$geton_138), na.rm=T)
 # # 
 # # # orig_mod = res_df
 # # # mean(abs(res_df$GETON_CNT_hat - res_df$real))
