@@ -1,7 +1,7 @@
 %% Preliminary
 
 % add IRIS to the path
-cd /home/sugarkhuu/Documents/Documents/my/modelling/econmod/sixth
+cd /home/sugarkhuu/Documents/Documents/my/modelling/econmod/eigth
 addpath /home/sugarkhuu/Documents/IRIS-Toolbox-Release-20180319
 
 % configure IRIS
@@ -9,10 +9,10 @@ irisstartup
 
 disp('Forecast starts ...');
 p   = struct();
-sixth_param;
+eigth_param;
 
 
-m = model('sixth.mod','linear',true,'assign',p);
+m = model('eigth.mod','linear',true,'assign',p);
 m = solve(m);
 ms = sstate(m);
 
