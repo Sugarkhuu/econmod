@@ -51,4 +51,3 @@ d.obs_dl_cpi_foreign(qq(2018,1):qq(2019,4)) = NaN;
 
 [~, f, v, ~, pe, co] = filter(m, d, qq(2018,1):qq(2019,4)+40);
 a=f.mean;
-keyboard
