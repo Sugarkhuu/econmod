@@ -51,4 +51,18 @@ d.obs_dl_cpi_foreign(qq(2018,1):qq(2019,4)) = NaN;
 
 [~, f, v, ~, pe, co] = filter(m, d, qq(2018,1):qq(2019,4)+40);
 a=f.mean;
+
+enames = get(m,'enames');
+endh = qq(00,1);
+sizepar = {'size',1};
+irfNumPer = 40;
+% sizepar = {'size','std'};
+[sirfs,rng] = srf(m,endh:endh+irfNumPer+1,...
+                'select', enames, sizepar{:});
+
+model = m;
+nper = 40;
+[ACF_contrib,unused,list] = acf(model,'order',0,'contributions',true);
+[feAbsAll,feRelAll,feList,feAbsDb,feRelDb] = fevd(model,nper);
+
 keyboard
